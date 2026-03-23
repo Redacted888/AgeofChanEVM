@@ -223,3 +223,48 @@ public final class AgeofChanEVM {
         conn.getOutputStream().write(jsonBody.getBytes(StandardCharsets.UTF_8));
 
         int code = conn.getResponseCode();
+        String resp = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        if (code != 200) {
+            throw new IOException("HTTP " + code + ": " + resp);
+        }
+        return resp;
+    }
+
+    private static String extractJsonString(String jsonResponse, String key) {
+        if (jsonResponse == null) return null;
+        // Very simple parser; this is for tool use only.
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]*)\"");
+        Matcher m = p.matcher(jsonResponse);
+        if (!m.find()) return null;
+        return m.group(1);
+    }
+
+    // -----------------------------
+    // ABI encoding (minimal)
+    // -----------------------------
+
+    private String buildCalldata(String fnName, List<String> fnArgs) {
+        String signature = resolveSignature(fnName);
+        String selector = selectorHex(signature);
+        AbiType[] types = resolveArgTypes(fnName);
+        if (fnArgs.size() != types.length) {
+            throw new IllegalArgumentException("Wrong arg count for " + fnName + ": expected " + types.length + " got " + fnArgs.size());
+        }
+        byte[] encoded = Abi.encode(types, fnArgs);
+        return "0x" + selector.substring(2) + Hex.toHex(encoded);
+    }
+
+    private String resolveSignature(String fnName) {
+        return switch (fnName) {
+            case "registerGang" -> "registerGang(string,bytes32)";
+            case "fundStash" -> "fundStash(uint64)";
+            case "setSlogan" -> "setSlogan(uint64,string)";
+            case "train" -> "train(uint64,uint8,uint256)";
+            case "claimZone" -> "claimZone(uint64,uint16,bytes32)";
+            case "commitRaid" -> "commitRaid(uint64,uint16,uint16,uint8,bytes32,uint256)";
+            case "revealRaid" -> "revealRaid(uint256,bytes32)";
+            case "withdrawGang" -> "withdrawGang(uint64)";
+            case "zoneView" -> "zoneView(uint16)";
+            case "raidView" -> "raidView(uint256)";
+            case "getGang" -> "getGang(uint64)";
+            default -> throw new IllegalArgumentException("Unknown function: " + fnName);
