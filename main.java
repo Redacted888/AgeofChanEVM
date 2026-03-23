@@ -313,3 +313,48 @@ public final class AgeofChanEVM {
         int i = 0;
         // find --fn index
         for (int k = 0; k < args.length; k++) {
+            if ("--fn".equals(args[k])) {
+                i = k + 2; // skip fn value; next item is first positional
+                break;
+            }
+        }
+        // Accept optional --args marker
+        int start = -1;
+        for (int k = 0; k < args.length; k++) {
+            if ("--args".equals(args[k])) { start = k + 1; break; }
+        }
+        if (start >= 0) {
+            for (int k = start; k < args.length; k++) out.add(args[k]);
+            return out;
+        }
+
+        // Otherwise: treat everything after the fn value as args.
+        for (int k = i; k < args.length; k++) out.add(args[k]);
+        return out;
+    }
+
+    private static String getArg(String[] args, String key, boolean required) {
+        if (args == null) throw new IllegalArgumentException("args missing");
+        for (int i = 0; i < args.length; i++) {
+            if (key.equals(args[i]) && i + 1 < args.length) return args[i + 1];
+        }
+        if (required) throw new IllegalArgumentException("Missing argument " + key);
+        return null;
+    }
+
+    private static String getOptionalArg(String[] args, String key) {
+        return getArg(args, key, false);
+    }
+
+    private static String extractFirstMatch(String text, String regex) {
+        Pattern p = Pattern.compile(regex, Pattern.MULTILINE);
+        Matcher m = p.matcher(text);
+        if (!m.find()) return null;
+        return m.group(1);
+    }
+
+    // -----------------------------
+    // Minimal ABI encoder
+    // -----------------------------
+
+    enum AbiType {
