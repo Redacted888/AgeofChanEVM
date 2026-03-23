@@ -88,3 +88,48 @@ public final class AgeofChanEVM {
 
     // -----------------------------
     // Runtime + configuration
+    // -----------------------------
+
+    private static final String DEFAULT_RPC = "https://eth.llamarpc.com";
+    private String rpcUrl = DEFAULT_RPC;
+
+    private final Random rnd = new Random();
+
+    private AgeofChanEVM() {}
+
+    // -----------------------------
+    // Commands
+    // -----------------------------
+
+    private void runDeploy(String[] args) throws Exception {
+        String rpc = getArg(args, "--rpc", true);
+        String artifact = getArg(args, "--artifact", true);
+        String from = getArg(args, "--from", true);
+        String artifactJson = Files.readString(Path.of(artifact), StandardCharsets.UTF_8);
+
+        // Minimal artifact parsing:
+        // Look for "bytecode":"0x..."
+        String bytecode = extractFirstMatch(artifactJson, "\"bytecode\"\\s*:\\s*\"(0x[0-9a-fA-F]*)\"");
+        if (bytecode == null) throw new IllegalArgumentException("artifact bytecode not found");
+
+        rpcUrl = rpc;
+        System.out.println("Deploying bytecode length=" + (bytecode.length() - 2) / 2 + " bytes ...");
+
+        String data = bytecode;
+
+        Map<String, Object> tx = new HashMap<>();
+        tx.put("from", normalizeAddress(from));
+        tx.put("data", data);
+        // gas/value optional
+
+        String gasWei = getOptionalArg(args, "--gas");
+        if (gasWei != null) tx.put("gas", "0x" + new BigInteger(gasWei).toString(16));
+        String valueWei = getOptionalArg(args, "--value");
+        if (valueWei != null) tx.put("value", "0x" + new BigInteger(valueWei).toString(16));
+
+        String txHash = ethSendTransaction(tx);
+        System.out.println("Deploy tx hash: " + txHash);
+    }
+
+    private void runView(String[] args) throws Exception {
+        String rpc = getArg(args, "--rpc", true);
