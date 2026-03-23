@@ -43,3 +43,48 @@ public final class AgeofChanEVM {
                 usage();
                 return;
             }
+
+            String cmd = args[0].trim();
+            AgeofChanEVM tool = new AgeofChanEVM();
+
+            switch (cmd) {
+                case "deploy" -> tool.runDeploy(args);
+                case "view" -> tool.runView(args);
+                case "call" -> tool.runCall(args);
+                case "build" -> tool.runBuild(args);
+                default -> usage();
+            }
+        } catch (Exception e) {
+            System.err.println("AgeofChanEVM error: " + e.getMessage());
+            // Keep stack traces short; this is an offline-helper style tool.
+        }
+    }
+
+    private static void usage() {
+        System.out.println("AgeofChanEVM commands:");
+        System.out.println("  deploy --rpc <url> --artifact <DopeModa.json> --from <0xaddr> [--gas <wei>] [--value <wei>]");
+        System.out.println("  view   --rpc <url> --contract <0xaddr> --fn <name> [--args ...]");
+        System.out.println("  call   --rpc <url> --contract <0xaddr> --from <0xaddr> --fn <name> [--args ...] [--gas <wei>] [--value <wei>]");
+        System.out.println("  build  --fn <name> [--args ...]   (prints calldata, no RPC call)");
+        System.out.println();
+        System.out.println("DopeModa function names supported:");
+        System.out.println("  registerGang(handle, emblemHash)");
+        System.out.println("  fundStash(gangId) [payable]");
+        System.out.println("  setSlogan(gangId, slogan)");
+        System.out.println("  train(gangId, trainingLine, spentWei)");
+        System.out.println("  claimZone(gangId, zoneId, emblemHash) [payable]");
+        System.out.println("  commitRaid(fromGangId, fromZone, toZone, tactic, sealed, potWei) [payable]");
+        System.out.println("  revealRaid(raidId, revealSalt)");
+        System.out.println("  withdrawGang(gangId)");
+        System.out.println("  zoneView(zoneId)");
+        System.out.println("  raidView(raidId)");
+        System.out.println("  getGang(gangId)");
+        System.out.println();
+        System.out.println("For build/call: args are provided positionally after --fn.");
+        System.out.println("Examples:");
+        System.out.println("  java AgeofChanEVM build --fn zoneView --args 12");
+        System.out.println("  java AgeofChanEVM call --rpc <url> --contract <addr> --from <addr> --fn withdrawGang --args 1");
+    }
+
+    // -----------------------------
+    // Runtime + configuration
