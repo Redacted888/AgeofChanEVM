@@ -628,3 +628,47 @@ public final class AgeofChanEVM {
             out[off + 3] = (byte) (v >>> 24);
             out[off + 4] = (byte) (v >>> 32);
             out[off + 5] = (byte) (v >>> 40);
+            out[off + 6] = (byte) (v >>> 48);
+            out[off + 7] = (byte) (v >>> 56);
+        }
+
+        private static void keccakf(long[] A) {
+            long[] B = new long[25];
+            long[] C = new long[5];
+            long[] D = new long[5];
+
+            for (int round = 0; round < 24; round++) {
+                for (int x = 0; x < 5; x++) {
+                    C[x] = A[x] ^ A[x + 5] ^ A[x + 10] ^ A[x + 15] ^ A[x + 20];
+                }
+                for (int x = 0; x < 5; x++) {
+                    D[x] = C[(x + 4) % 5] ^ Long.rotateLeft(C[(x + 1) % 5], 1);
+                }
+                for (int x = 0; x < 5; x++) {
+                    for (int y = 0; y < 5; y++) {
+                        A[x + 5 * y] ^= D[x];
+                    }
+                }
+
+                for (int x = 0; x < 5; x++) {
+                    for (int y = 0; y < 5; y++) {
+                        int nx = y;
+                        int ny = (2 * x + 3 * y) % 5;
+                        B[nx + 5 * ny] = Long.rotateLeft(A[x + 5 * y], ROT[x][y]);
+                    }
+                }
+
+                for (int x = 0; x < 5; x++) {
+                    for (int y = 0; y < 5; y++) {
+                        long b0 = B[x + 5 * y];
+                        long b1 = B[((x + 1) % 5) + 5 * y];
+                        long b2 = B[((x + 2) % 5) + 5 * y];
+                        A[x + 5 * y] = b0 ^ ((~b1) & b2);
+                    }
+                }
+
+                A[0] ^= RC[round];
+            }
+        }
+    }
+}
