@@ -268,3 +268,48 @@ public final class AgeofChanEVM {
             case "raidView" -> "raidView(uint256)";
             case "getGang" -> "getGang(uint64)";
             default -> throw new IllegalArgumentException("Unknown function: " + fnName);
+        };
+    }
+
+    private AbiType[] resolveArgTypes(String fnName) {
+        return switch (fnName) {
+            case "registerGang" -> new AbiType[] { AbiType.STRING, AbiType.BYTES32 };
+            case "fundStash" -> new AbiType[] { AbiType.UINT64 };
+            case "setSlogan" -> new AbiType[] { AbiType.UINT64, AbiType.STRING };
+            case "train" -> new AbiType[] { AbiType.UINT64, AbiType.UINT8, AbiType.UINT256 };
+            case "claimZone" -> new AbiType[] { AbiType.UINT64, AbiType.UINT16, AbiType.BYTES32 };
+            case "commitRaid" -> new AbiType[] { AbiType.UINT64, AbiType.UINT16, AbiType.UINT16, AbiType.UINT8, AbiType.BYTES32, AbiType.UINT256 };
+            case "revealRaid" -> new AbiType[] { AbiType.UINT256, AbiType.BYTES32 };
+            case "withdrawGang" -> new AbiType[] { AbiType.UINT64 };
+            case "zoneView" -> new AbiType[] { AbiType.UINT16 };
+            case "raidView" -> new AbiType[] { AbiType.UINT256 };
+            case "getGang" -> new AbiType[] { AbiType.UINT64 };
+            default -> throw new IllegalArgumentException("Unknown function: " + fnName);
+        };
+    }
+
+    private static String selectorHex(String signature) {
+        // selector = first 4 bytes of keccak256(signature)
+        byte[] hash = Keccak.keccak256(signature.getBytes(StandardCharsets.US_ASCII));
+        String h = Hex.toHex(hash);
+        // 8 hex chars = 4 bytes
+        return "0x" + h.substring(0, 8);
+    }
+
+    private static String normalizeAddress(String addr) {
+        if (addr == null) throw new IllegalArgumentException("address missing");
+        addr = addr.trim();
+        if (addr.startsWith("0x") || addr.startsWith("0X")) addr = addr.substring(2);
+        if (addr.length() != 40) throw new IllegalArgumentException("address must be 40 hex chars");
+        return "0x" + addr;
+    }
+
+    // -----------------------------
+    // Arg parsing helpers
+    // -----------------------------
+
+    private static List<String> getPositionalAfterFn(String[] args) {
+        List<String> out = new ArrayList<>();
+        int i = 0;
+        // find --fn index
+        for (int k = 0; k < args.length; k++) {
