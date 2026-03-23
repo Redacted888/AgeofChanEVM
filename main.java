@@ -133,3 +133,48 @@ public final class AgeofChanEVM {
 
     private void runView(String[] args) throws Exception {
         String rpc = getArg(args, "--rpc", true);
+        String contract = getArg(args, "--contract", true);
+        String fn = getArg(args, "--fn", true);
+        this.rpcUrl = rpc;
+
+        List<String> fnArgs = getPositionalAfterFn(args);
+        String data = buildCalldata(fn, fnArgs);
+
+        String result = ethCall(contract, data);
+        System.out.println("eth_call result: " + result);
+    }
+
+    private void runCall(String[] args) throws Exception {
+        String rpc = getArg(args, "--rpc", true);
+        String contract = getArg(args, "--contract", true);
+        String from = getArg(args, "--from", true);
+        String fn = getArg(args, "--fn", true);
+        this.rpcUrl = rpc;
+
+        List<String> fnArgs = getPositionalAfterFn(args);
+        String data = buildCalldata(fn, fnArgs);
+
+        Map<String, Object> tx = new HashMap<>();
+        tx.put("from", normalizeAddress(from));
+        tx.put("to", normalizeAddress(contract));
+        tx.put("data", data);
+
+        // Allow a manual tx value override for payable methods
+        String gasWei = getOptionalArg(args, "--gas");
+        if (gasWei != null) tx.put("gas", "0x" + new BigInteger(gasWei).toString(16));
+
+        String valueWei = getOptionalArg(args, "--value");
+        if (valueWei != null) tx.put("value", "0x" + new BigInteger(valueWei).toString(16));
+
+        String txHash = ethSendTransaction(tx);
+        System.out.println("call tx hash: " + txHash);
+    }
+
+    private void runBuild(String[] args) throws Exception {
+        String fn = getArg(args, "--fn", true);
+        List<String> fnArgs = getPositionalAfterFn(args);
+        String data = buildCalldata(fn, fnArgs);
+        System.out.println(data);
+    }
+
+    // -----------------------------
