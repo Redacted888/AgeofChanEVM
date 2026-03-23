@@ -178,3 +178,48 @@ public final class AgeofChanEVM {
     }
 
     // -----------------------------
+    // JSON-RPC minimal client
+    // -----------------------------
+
+    private String ethCall(String to, String data) throws IOException {
+        String body = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"" + to + "\",\"data\":\"" + data + "\"},\"latest\"],\"id\":1}";
+        String resp = postJson(rpcUrl, body);
+        return extractJsonString(resp, "result");
+    }
+
+    private String ethSendTransaction(Map<String, Object> tx) throws IOException {
+        // Build params object manually (this tool aims to be dependency-free).
+        StringBuilder obj = new StringBuilder();
+        obj.append("{");
+        boolean first = true;
+        for (Map.Entry<String, Object> e : tx.entrySet()) {
+            if (!first) obj.append(",");
+            first = false;
+            obj.append("\"").append(e.getKey()).append("\":");
+            Object v = e.getValue();
+            if (v instanceof String) {
+                obj.append("\"").append(v).append("\"");
+            } else {
+                obj.append(v.toString());
+            }
+        }
+        obj.append("}");
+
+        String body = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendTransaction\",\"params\":[" + obj + "],\"id\":1}";
+        String resp = postJson(rpcUrl, body);
+        String result = extractJsonString(resp, "result");
+        if (result == null || result.isEmpty()) {
+            throw new IOException("RPC sendTransaction failed: " + resp);
+        }
+        return result;
+    }
+
+    private String postJson(String urlString, String jsonBody) throws IOException {
+        URL url = new URL(urlString);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+        conn.getOutputStream().write(jsonBody.getBytes(StandardCharsets.UTF_8));
+
+        int code = conn.getResponseCode();
