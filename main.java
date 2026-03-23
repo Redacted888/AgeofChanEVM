@@ -538,3 +538,48 @@ public final class AgeofChanEVM {
             if (n == 0) return new byte[0];
             if (n % 2 != 0) s = "0" + s;
             int len = s.length() / 2;
+            byte[] out = new byte[len];
+            for (int i = 0; i < len; i++) {
+                int hi = Character.digit(s.charAt(i * 2), 16);
+                int lo = Character.digit(s.charAt(i * 2 + 1), 16);
+                out[i] = (byte) ((hi << 4) | lo);
+            }
+            return out;
+        }
+    }
+
+    // -----------------------------
+    // Keccak-256 (pure Java)
+    // -----------------------------
+
+    // Ported conceptually from your workspace's AchanAX keccak helper.
+    // It's complete and dependency-free so we can compute selectors without external libs.
+    static final class Keccak {
+        private static final long[] RC = new long[] {
+                0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL, 0x8000000080008000L,
+                0x000000000000808bL, 0x8000000080000001L, 0x8000000000008081L, 0x8000000000008009L,
+                0x000000000000008aL, 0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
+                0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L, 0x8000000000008003L,
+                0x8000000000008002L, 0x8000000000000080L, 0x000000000000800aL, 0x800000008000000aL,
+                0x8000000080008081L, 0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
+        };
+
+        private static final int[][] ROT = new int[][]{
+                { 0, 36, 3, 41, 18 },
+                { 1, 44, 10, 45, 2 },
+                { 62, 6, 43, 15, 61 },
+                { 28, 55, 25, 21, 56 },
+                { 27, 20, 39, 8, 14 }
+        };
+
+        static byte[] keccak256(byte[] input) {
+            final int rateBytes = 136;
+            long[] st = new long[25];
+
+            int offset = 0;
+            while (offset + rateBytes <= input.length) {
+                absorbBlock(st, input, offset, rateBytes);
+                keccakf(st);
+                offset += rateBytes;
+            }
+
