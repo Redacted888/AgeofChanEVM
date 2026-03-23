@@ -448,3 +448,48 @@ public final class AgeofChanEVM {
         }
 
         private static byte[] word(byte[] raw, boolean bigEndian) {
+            // Convert to exactly 32 bytes big-endian.
+            byte[] out = new byte[32];
+            byte[] src = raw;
+            // Strip leading sign byte if present
+            if (src.length > 32) {
+                int start = src.length - 32;
+                System.arraycopy(src, start, out, 0, 32);
+                return out;
+            }
+            int start = 32 - src.length;
+            System.arraycopy(src, 0, out, start, src.length);
+            return out;
+        }
+
+        private static byte[] bytes32Word(String a) {
+            if (a == null) a = "0x0";
+            a = a.trim();
+            if (a.startsWith("0x") || a.startsWith("0X")) a = a.substring(2);
+            if (a.length() > 64) a = a.substring(a.length() - 64);
+            if (a.length() % 2 == 1) a = "0" + a;
+            byte[] b = Hex.fromHex(a);
+            if (b.length != 32) {
+                // left-pad
+                byte[] out = new byte[32];
+                int start = 32 - b.length;
+                System.arraycopy(b, 0, out, start, b.length);
+                return out;
+            }
+            return b;
+        }
+
+        private static byte[] rightPadToMultiple(byte[] b, int multiple) {
+            int rem = b.length % multiple;
+            int pad = rem == 0 ? 0 : (multiple - rem);
+            if (pad == 0) return b;
+            byte[] out = new byte[b.length + pad];
+            System.arraycopy(b, 0, out, 0, b.length);
+            return out;
+        }
+
+        private static byte[] concatAll(List<byte[]> parts) {
+            int total = 0;
+            for (byte[] p : parts) if (p != null) total += p.length;
+            byte[] out = new byte[total];
+            int pos = 0;
