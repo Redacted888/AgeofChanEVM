@@ -493,3 +493,48 @@ public final class AgeofChanEVM {
             for (byte[] p : parts) if (p != null) total += p.length;
             byte[] out = new byte[total];
             int pos = 0;
+            for (byte[] p : parts) {
+                if (p == null) continue;
+                System.arraycopy(p, 0, out, pos, p.length);
+                pos += p.length;
+            }
+            return out;
+        }
+
+        private static byte[] concat(byte[] a, byte[] b) {
+            if (a == null || a.length == 0) return b;
+            if (b == null || b.length == 0) return a;
+            byte[] out = new byte[a.length + b.length];
+            System.arraycopy(a, 0, out, 0, a.length);
+            System.arraycopy(b, 0, out, a.length, b.length);
+            return out;
+        }
+    }
+
+    // -----------------------------
+    // Hex helpers
+    // -----------------------------
+
+    static final class Hex {
+        private static final char[] CH = "0123456789abcdef".toCharArray();
+
+        static String toHex(byte[] bytes) {
+            if (bytes == null) return "";
+            char[] out = new char[bytes.length * 2];
+            int p = 0;
+            for (byte b : bytes) {
+                int v = b & 0xFF;
+                out[p++] = CH[v >>> 4];
+                out[p++] = CH[v & 0x0F];
+            }
+            return new String(out);
+        }
+
+        static byte[] fromHex(String hex) {
+            String s = hex;
+            if (s == null) s = "";
+            if (s.startsWith("0x") || s.startsWith("0X")) s = s.substring(2);
+            int n = s.length();
+            if (n == 0) return new byte[0];
+            if (n % 2 != 0) s = "0" + s;
+            int len = s.length() / 2;
