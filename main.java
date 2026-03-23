@@ -358,3 +358,48 @@ public final class AgeofChanEVM {
     // -----------------------------
 
     enum AbiType {
+        UINT8(1),
+        UINT16(2),
+        UINT64(8),
+        UINT256(32),
+        BYTES32(32),
+        STRING(-1);
+
+        final int size;
+        AbiType(int size) { this.size = size; }
+    }
+
+    static final class Abi {
+        private Abi() {}
+
+        static byte[] encode(AbiType[] types, List<String> args) {
+            // Solidity ABI encoding:
+            // - For dynamic types (string), we put offset pointers in the head and
+            //   append their data in the tail.
+            // - For fixed types, we encode directly into the head.
+            int headWords = 0;
+            for (AbiType t : types) headWords += 1;
+
+            List<byte[]> headParts = new ArrayList<>();
+            List<byte[]> tailParts = new ArrayList<>();
+
+            int dynamicCount = 0;
+            for (int i = 0; i < types.length; i++) {
+                if (types[i] == AbiType.STRING) dynamicCount++;
+            }
+
+            int headSizeBytes = headWords * 32;
+            int tailCursor = 0;
+
+            for (int i = 0; i < types.length; i++) {
+                AbiType t = types[i];
+                String a = args.get(i);
+                if (t == AbiType.STRING) {
+                    // offset = headSize + tailCursor
+                    byte[] offsetWord = word((long) (headSizeBytes + tailCursor));
+                    headParts.add(offsetWord);
+
+                    byte[] strBytes = aToBytesUtf8(a);
+                    byte[] lenWord = word((long) strBytes.length);
+                    byte[] padded = rightPadToMultiple(strBytes, 32);
+                    byte[] tail = concat(lenWord, padded);
