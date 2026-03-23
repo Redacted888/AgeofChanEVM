@@ -403,3 +403,48 @@ public final class AgeofChanEVM {
                     byte[] lenWord = word((long) strBytes.length);
                     byte[] padded = rightPadToMultiple(strBytes, 32);
                     byte[] tail = concat(lenWord, padded);
+                    tailParts.add(tail);
+                    tailCursor += tail.length;
+                } else if (t == AbiType.BYTES32) {
+                    headParts.add(bytes32Word(a));
+                } else if (t == AbiType.UINT8) {
+                    headParts.add(uintWord(parseUint(a)));
+                } else if (t == AbiType.UINT16) {
+                    headParts.add(uintWord(parseUint(a)));
+                } else if (t == AbiType.UINT64) {
+                    headParts.add(uintWord(parseUint(a)));
+                } else if (t == AbiType.UINT256) {
+                    headParts.add(uintWord(parseUint(a)));
+                } else {
+                    throw new IllegalArgumentException("Unsupported type: " + t);
+                }
+            }
+
+            byte[] head = concatAll(headParts);
+            byte[] tail = concatAll(tailParts);
+            return concat(head, tail);
+        }
+
+        private static byte[] aToBytesUtf8(String a) {
+            // For CLI, strings are passed as raw words. We don't try to unescape quotes.
+            if (a == null) return new byte[0];
+            return a.getBytes(StandardCharsets.UTF_8);
+        }
+
+        private static long parseUint(String s) {
+            if (s == null || s.isBlank()) return 0;
+            s = s.trim();
+            if (s.startsWith("0x") || s.startsWith("0X")) return new BigInteger(s.substring(2), 16).longValue();
+            return new BigInteger(s).longValue();
+        }
+
+        private static byte[] uintWord(long v) {
+            // Encode as uint256 word: 32 bytes big-endian.
+            return word(BigInteger.valueOf(v).toByteArray(), true);
+        }
+
+        private static byte[] word(long v) {
+            return word(BigInteger.valueOf(v).toByteArray(), true);
+        }
+
+        private static byte[] word(byte[] raw, boolean bigEndian) {
